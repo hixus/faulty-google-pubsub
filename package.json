@@ -1,0 +1,24 @@
+{
+  "name": "faulty-google-pubsub",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hixus/faulty-google-pubsub.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hixus/faulty-google-pubsub/issues"
+  },
+  "homepage": "https://github.com/hixus/faulty-google-pubsub#readme",
+  "dependencies": {
+    "@google-cloud/pubsub": "^1.3.0",
+    "highland": "^2.13.5",
+    "lodash": "^4.17.15"
+  }
+}
