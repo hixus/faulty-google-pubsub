@@ -1,14 +1,34 @@
 const { v1 } = require("@google-cloud/pubsub");
 const hl = require("highland");
 const { debounce } = require("lodash");
-const { projectId, inputSubscriptionName } = require("./config");
+const { GrpcClient } = require("google-gax");
+
+const {
+  projectId,
+  inputSubscriptionName,
+  usePubSubEmulator,
+  pubSubEmulatorPort
+} = require("./config");
 
 const log = debounce(hl.log, 250, { maxWait: 1000 });
+
+const getSubClient = useEmulator => {
+  if (useEmulator) {
+    const { grpc } = new GrpcClient();
+    return new v1.SubscriberClient({
+      servicePath: "localhost",
+      port: pubSubEmulatorPort,
+      sslCreds: grpc.credentials.createInsecure()
+    });
+  } else {
+    return new v1.SubscriberClient();
+  }
+};
 
 (async () => {
   try {
     const subscription = `projects/${projectId}/subscriptions/${inputSubscriptionName}`;
-    const subClient = new v1.SubscriberClient();
+    const subClient = getSubClient(usePubSubEmulator);
     let readMessageCount = 0;
 
     const request = {
