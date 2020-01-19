@@ -1,42 +1,65 @@
-const { PubSub } = require("@google-cloud/pubsub");
+const { v1 } = require("@google-cloud/pubsub");
 const hl = require("highland");
 const fs = require("fs");
+const { GrpcClient } = require("google-gax");
+
 const {
   projectId,
   inputTopicName,
-  inputSubscriptionName
+  usePubSubEmulator,
+  pubSubEmulatorPort
 } = require("./config");
 const { debounce } = require("lodash");
 
 const log = debounce(hl.log, 250, { maxWait: 1000 });
 
+const getPubClient = useEmulator => {
+  if (useEmulator) {
+    const { grpc } = new GrpcClient();
+    return new v1.PublisherClient({
+      servicePath: "localhost",
+      port: pubSubEmulatorPort,
+      sslCreds: grpc.credentials.createInsecure()
+    });
+  } else {
+    return new v1.PublisherClient();
+  }
+};
+
 (async () => {
   try {
     const exportFile = fs.createReadStream("./dataset.jsonl");
+    const pubClient = getPubClient(usePubSubEmulator);
+    const topic = pubClient.topicPath(projectId, inputTopicName);
+
     let messageCount = 0;
-    const pubsub = new PubSub({ projectId });
+
     try {
-      await pubsub.createTopic(inputTopicName);
-      await pubsub.createSubscription(inputTopicName, inputSubscriptionName, {
-        ackDeadlineSeconds: 600
-      });
+      await pubClient.createTopic({ name: topic });
     } catch (error) {
       console.log(error.toString());
     }
 
-    const inputTopic = pubsub.topic(inputTopicName);
-
     hl(exportFile)
       .split()
       .compact()
-      .map(Buffer.from)
+      .map(row => ({ data: Buffer.from(row) }))
       .doto(() => {
         messageCount++;
         log(messageCount);
       })
-      .each(row => inputTopic.publish(row))
+      .batch(100)
+      .flatMap(messages =>
+        hl(
+          pubClient.publish({
+            topic,
+            messages
+          })
+        )
+      )
+      .each(log)
       .done(() => {
-        hl.log(`added ${messageCount} messages to ${inputTopic.name}`);
+        hl.log(`added ${messageCount} messages to ${topic}`);
       });
   } catch (error) {
     console.error(error);

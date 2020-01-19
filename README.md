@@ -16,3 +16,5 @@ at listOnTimeout (internal/timers.js:531:17)
 at processTimers (internal/timers.js:475:7)
 
 Subscriber read 664 154 messages. So 50% increse.
+
+export PUBSUB_EMULATOR_HOST=localhost:8085

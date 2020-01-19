@@ -2,6 +2,6 @@ module.exports = {
   projectId: "test-terra-258114",
   inputTopicName: "foo",
   inputSubscriptionName: "foo",
-  usePubSubEmulator: true,
+  usePubSubEmulator: false,
   pubSubEmulatorPort: 8085
 };
